@@ -25,6 +25,10 @@ fixlengths options:
     -l, --length <arg>     Forcefully set the length of each record. If a
                            record is not the size given, then it is truncated
                            or expanded as appropriate.
+    --quote <arg>          The quote character to use. [default: \"]
+    --escape <arg>         The escape character to use. When not specified,
+                           quotes are escaped by doubling them.
+    --no-quoting           Disable quoting completely.
 
 Common options:
     -h, --help             Display this message
@@ -39,6 +43,9 @@ struct Args {
     flag_length: Option<usize>,
     flag_output: Option<String>,
     flag_delimiter: Option<Delimiter>,
+    flag_quote: Delimiter,
+    flag_escape: Option<Delimiter>,
+    flag_no_quoting: bool,
 }
 
 pub fn run(argv: &[&str]) -> CliResult<()> {
@@ -46,7 +53,16 @@ pub fn run(argv: &[&str]) -> CliResult<()> {
     let config = Config::new(&args.arg_input)
         .delimiter(args.flag_delimiter)
         .no_headers(true)
+        .quote(args.flag_quote.as_byte())
         .flexible(true);
+
+    if let Some(escape) = args.flag_escape {
+        config = config.escape(Some(escape.as_byte())).double_quote(false);
+    }
+    if args.flag_no_quoting {
+        config = config.quoting(false);
+    }
+
     let length = match args.flag_length {
         Some(length) => {
             if length == 0 {
